@@ -13,7 +13,7 @@ trait TransformableTrait {
     public function transform($relations = false)
     {
         $relations = $relations ? Config::get('larasearch.paths.' . get_class($this)) : [];
-
+        $this->isElasticSearch = true;
         $doc = $this->load($relations)->toArray();
 
         return $doc;

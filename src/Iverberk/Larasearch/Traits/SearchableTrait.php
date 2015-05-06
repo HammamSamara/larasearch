@@ -8,6 +8,11 @@ trait SearchableTrait {
     use TransformableTrait;
     use CallableTrait;
 
+    public static function bootSearchableTrait()
+    {
+        parent::bootCallableTrait();
+    }
+
     /**
      * The Elasticsearch proxy class
      *

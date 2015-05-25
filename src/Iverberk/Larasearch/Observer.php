@@ -12,7 +12,7 @@ class Observer {
 	 *
 	 * @param Model $model
 	 */
-	public function deleted(Model $model)
+	public function deleting(Model $model)
 	{
 		// Delete corresponding $model document from Elasticsearch
 		Queue::connection('elastic-search')->push('Iverberk\Larasearch\Jobs\DeleteJob', [get_class($model) . ':' . $model->getKey()]);
@@ -51,8 +51,9 @@ class Observer {
 		{
 			if ( ! empty($path))
 			{
-				$model = $model->load($path);
-
+				if ( ! array_key_exists($path, $model->getRelations())) {
+					$model = $model->load($path);
+				}
 				// Explode the path into an array
 				$path = explode('.', $path);
 

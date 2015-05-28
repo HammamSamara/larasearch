@@ -98,6 +98,7 @@ class Index {
 
 			foreach ($records as $record)
 			{
+				if ( ! $record->shouldIndex()) continue;
 				$data[] = [
 					'index' => [
 						'_id' => $record->getEsId()
@@ -108,7 +109,9 @@ class Index {
 			}
 
 			// Bulk import the data to Elasticsearch
-			$this->bulk($data);
+			if ( ! empty($data)) {
+				$this->bulk($data);
+			}
 		}
 	}
 

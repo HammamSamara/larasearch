@@ -7,6 +7,9 @@ use Illuminate\Support\Facades\Queue;
 
 class Observer {
 
+	// a hack to prevent events to be fired multiple times
+	static $triggered = false;
+
 	/**
 	 * Model delete event handler
 	 *
@@ -15,10 +18,10 @@ class Observer {
 	public function deleting(Model $model)
 	{
 		// Delete corresponding $model document from Elasticsearch
-		Queue::connection('elastic-search')->push('Iverberk\Larasearch\Jobs\DeleteJob', [get_class($model) . ':' . $model->getKey()]);
-
-		// Update all related model documents to reflect that $model has been removed
-		Queue::connection('elastic-search')->push('Iverberk\Larasearch\Jobs\ReindexJob', $this->findAffectedModels($model, true));
+		if ( ! self::$triggered) {
+			Queue::connection('elastic-search')->push('Workers\ElasticDeleteJob', get_class($model) . ':' . $model->getKey());
+			self::$triggered = true;
+		}
 	}
 
 	/**
@@ -28,9 +31,10 @@ class Observer {
 	 */
 	public function saved(Model $model)
 	{
-		if ($model::$__es_enable && $model->shouldIndex())
+		if ($model::$__es_enable && $model->shouldIndex() && ! self::$triggered)
 		{
-			Queue::connection('elastic-search')->push('Iverberk\Larasearch\Jobs\ReindexJob', $this->findAffectedModels($model));
+			Queue::connection('elastic-search')->push('Workers\ElasticReindexJob', get_class($model) . ':' . $model->getKey());
+			self::$triggered = true;
 		}
 	}
 
@@ -40,7 +44,7 @@ class Observer {
 	 * @param Model $model
 	 * @return array
 	 */
-	private function findAffectedModels(Model $model, $excludeCurrent = false)
+	public function findAffectedModels(Model $model, $excludeCurrent = false)
 	{
 		// Temporary array to store affected models
 		$affectedModels = [];

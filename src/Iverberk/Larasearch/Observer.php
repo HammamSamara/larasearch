@@ -7,9 +7,6 @@ use Illuminate\Support\Facades\Queue;
 
 class Observer {
 
-	// a hack to prevent events to be fired multiple times
-	static $triggered = false;
-
 	/**
 	 * Model delete event handler
 	 *
@@ -18,10 +15,7 @@ class Observer {
 	public function deleting(Model $model)
 	{
 		// Delete corresponding $model document from Elasticsearch
-		if ( ! self::$triggered) {
-			Queue::connection('elastic-search')->push('Workers\ElasticDeleteJob', get_class($model) . ':' . $model->getKey());
-			self::$triggered = true;
-		}
+		Queue::connection('elastic-search')->push('Workers\ElasticDeleteJob', get_class($model) . ':' . $model->getKey());
 	}
 
 	/**
@@ -31,10 +25,9 @@ class Observer {
 	 */
 	public function saved(Model $model)
 	{
-		if ($model::$__es_enable && $model->shouldIndex() && ! self::$triggered)
+		if ($model::$__es_enable && $model->shouldIndex())
 		{
 			Queue::connection('elastic-search')->push('Workers\ElasticReindexJob', get_class($model) . ':' . $model->getKey());
-			self::$triggered = true;
 		}
 	}
 

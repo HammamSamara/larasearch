@@ -17,10 +17,7 @@ class Observer {
 		if (count($model::searchByQuery(['query' => ['match' => ['id' => $model->getKey()]]])->getResults()))
 		{
 			// Delete corresponding $model document from Elasticsearch
-			Queue::connection('elastic-search')->push('Iverberk\Larasearch\Jobs\DeleteJob', [get_class($model) . ':' . $model->getKey()]);
-
-			// Update all related model documents to reflect that $model has been removed
-			Queue::connection('elastic-search')->push('Iverberk\Larasearch\Jobs\ReindexJob', $this->findAffectedModels($model, true));
+			Queue::connection('elastic-search')->push('Workers\ElasticDeleteJob', get_class($model) . ':' . $model->getKey());
 		}
 	}
 
@@ -35,7 +32,7 @@ class Observer {
 		{
 			if ($model->shouldIndex())
 			{
-				Queue::connection('elastic-search')->push('Iverberk\Larasearch\Jobs\ReindexJob', $this->findAffectedModels($model));	
+				Queue::connection('elastic-search')->push('Workers\ElasticReindexJob', get_class($model) . ':' . $model->getKey());
 			} else {
 				$this->deleting($model);
 			}
@@ -48,7 +45,7 @@ class Observer {
 	 * @param Model $model
 	 * @return array
 	 */
-	private function findAffectedModels(Model $model, $excludeCurrent = false)
+	public function findAffectedModels(Model $model, $excludeCurrent = false)
 	{
 		// Temporary array to store affected models
 		$affectedModels = [];

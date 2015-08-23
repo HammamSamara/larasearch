@@ -14,11 +14,14 @@ class Observer {
 	 */
 	public function deleting(Model $model)
 	{
-		// Delete corresponding $model document from Elasticsearch
-		Queue::connection('elastic-search')->push('Iverberk\Larasearch\Jobs\DeleteJob', [get_class($model) . ':' . $model->getKey()]);
+		if (count($model::searchByQuery(['query' => ['match' => ['id' => $model->getKey()]]])->getResults()))
+		{
+			// Delete corresponding $model document from Elasticsearch
+			Queue::connection('elastic-search')->push('Iverberk\Larasearch\Jobs\DeleteJob', [get_class($model) . ':' . $model->getKey()]);
 
-		// Update all related model documents to reflect that $model has been removed
-		Queue::connection('elastic-search')->push('Iverberk\Larasearch\Jobs\ReindexJob', $this->findAffectedModels($model, true));
+			// Update all related model documents to reflect that $model has been removed
+			Queue::connection('elastic-search')->push('Iverberk\Larasearch\Jobs\ReindexJob', $this->findAffectedModels($model, true));
+		}
 	}
 
 	/**
@@ -28,9 +31,14 @@ class Observer {
 	 */
 	public function saved(Model $model)
 	{
-		if ($model::$__es_enable && $model->shouldIndex())
+		if ($model::$__es_enable)
 		{
-			Queue::connection('elastic-search')->push('Iverberk\Larasearch\Jobs\ReindexJob', $this->findAffectedModels($model));
+			if ($model->shouldIndex())
+			{
+				Queue::connection('elastic-search')->push('Iverberk\Larasearch\Jobs\ReindexJob', $this->findAffectedModels($model));	
+			} else {
+				$this->deleting($model);
+			}
 		}
 	}
 

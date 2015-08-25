@@ -14,17 +14,8 @@ class Observer {
 	 */
 	public function deleting(Model $model)
 	{
-		try {
-			$count = count($model::searchById($model->getKey()));
-		} catch (\Elasticsearch\Common\Exceptions\Missing404Exception $e) {
-			$count = 0;
-		}
-
-		if ($count)
-		{
-			// Delete corresponding $model document from Elasticsearch
-			Queue::connection('elastic-search')->push('Workers\ElasticDeleteJob', get_class($model) . ':' . $model->getKey());
-		}
+		// Delete corresponding $model document from Elasticsearch
+		Queue::connection('elastic-search')->push('Workers\ElasticDeleteJob', get_class($model) . ':' . $model->getKey());
 	}
 
 	/**
@@ -39,8 +30,14 @@ class Observer {
 			if ($model->shouldIndex())
 			{
 				Queue::connection('elastic-search')->push('Workers\ElasticReindexJob', get_class($model) . ':' . $model->getKey());
-			} else {
+			} elseif ($model->shouldDelete()) {
 				$this->deleting($model);
+			}
+
+			if ( ! empty($model->affectedDeletedModels)) {
+				foreach ($model->affectedDeletedModels as $model) {
+					Queue::connection('elastic-search')->push('Workers\ElasticReindexJob', $model);
+				}
 			}
 		}
 	}

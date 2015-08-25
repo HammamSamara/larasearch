@@ -193,6 +193,17 @@ class Proxy {
 	}
 
 	/**
+	 * Determine if the model requires deleting. Defaults to 'false' but can
+	 * be overridden by user-defined logic.
+	 *
+	 * @return bool
+	 */
+	public function shouldDelete()
+	{
+		return false;
+	}
+
+	/**
 	 * Reindex a specific database record to Elasticsearch
 	 */
 	public function refreshDoc($model)

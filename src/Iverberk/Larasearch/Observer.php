@@ -15,7 +15,7 @@ class Observer {
 	public function deleting(Model $model)
 	{
 		try {
-			$count = count($model::searchById($model->getKey());
+			$count = count($model::searchById($model->getKey()));
 		} catch (\Elasticsearch\Common\Exceptions\Missing404Exception $e) {
 			$count = 0;
 		}

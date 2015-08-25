@@ -25,9 +25,20 @@ class Observer {
 	 */
 	public function saved(Model $model)
 	{
-		if ($model::$__es_enable && $model->shouldIndex())
+		if ($model::$__es_enable)
 		{
-			Queue::connection('elastic-search')->push('Workers\ElasticReindexJob', get_class($model) . ':' . $model->getKey());
+			if ($model->shouldIndex())
+			{
+				Queue::connection('elastic-search')->push('Workers\ElasticReindexJob', get_class($model) . ':' . $model->getKey());
+			} elseif ($model->shouldDelete()) {
+				$this->deleting($model);
+			}
+
+			if ( ! empty($model->affectedDeletedModels)) {
+				foreach ($model->affectedDeletedModels as $model) {
+					Queue::connection('elastic-search')->push('Workers\ElasticReindexJob', $model);
+				}
+			}
 		}
 	}
 

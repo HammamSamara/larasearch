@@ -35,6 +35,13 @@ trait SearchableTrait {
 	public static $__es_enable = true;
 
 	/**
+	 * Array to reindex additional related models
+	 *
+	 * @var array
+	 */
+	public $affectedDeletedModels = [];
+
+	/**
 	 * Return an instance of the Elasticsearch proxy
 	 *
 	 * @throws \Exception

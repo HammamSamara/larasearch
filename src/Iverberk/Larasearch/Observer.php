@@ -14,7 +14,13 @@ class Observer {
 	 */
 	public function deleting(Model $model)
 	{
-		if (count($model::searchByQuery(['query' => ['match' => ['id' => $model->getKey()]]])->getResults()))
+		try {
+			$count = count($model::searchById($model->getKey());
+		} catch (\Elasticsearch\Common\Exceptions\Missing404Exception $e) {
+			$count = 0;
+		}
+
+		if ($count)
 		{
 			// Delete corresponding $model document from Elasticsearch
 			Queue::connection('elastic-search')->push('Workers\ElasticDeleteJob', get_class($model) . ':' . $model->getKey());

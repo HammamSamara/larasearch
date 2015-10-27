@@ -34,9 +34,16 @@ class Observer {
 				$this->deleting($model);
 			}
 
-			if ( ! empty($model->affectedDeletedModels)) {
-				foreach ($model->affectedDeletedModels as $model) {
-					Queue::connection('elastic-search')->push('Workers\ElasticReindexJob', $model);
+			if ( ! empty($model->affectedDeletedModels))
+			{
+				foreach ($model->affectedDeletedModels as $model)
+				{
+					if ($model->shouldIndex())
+					{
+						Queue::connection('elastic-search')->push('Workers\ElasticReindexJob', get_class($model) . ':' . $model->getKey());
+					} else {
+						$this->deleting($model);
+					}
 				}
 			}
 		}

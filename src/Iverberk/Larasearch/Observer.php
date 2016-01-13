@@ -16,6 +16,8 @@ class Observer {
 	{
 		// Delete corresponding $model document from Elasticsearch
 		Queue::connection('elastic-search')->push('Workers\ElasticDeleteJob', get_class($model) . ':' . $model->getKey());
+		// Update all related model documents to reflect that $model has been removed
+        	Queue::connection('elastic-search')->push('Iverberk\Larasearch\Jobs\ReindexJob', $this->findAffectedModels($model, true));
 	}
 
 	/**

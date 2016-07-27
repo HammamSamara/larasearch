@@ -56,7 +56,11 @@ class ReindexJob {
 			}
 		}
 
-		$job->delete();
+		if (method_exists($job,'getIronJob')) {
+            $job->getIron()->getIron()->deleteMessage($job->getQueue(), $job->getIronJob()->id, $job->getIronJob()->reservation_id);
+        } else {
+            $job->delete();
+        }
 	}
 
 } 
